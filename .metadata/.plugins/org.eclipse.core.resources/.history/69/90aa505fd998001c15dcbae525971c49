@@ -1,0 +1,228 @@
+/**
+ * @file entity.c
+ * @author your name (you@domain.com)
+ * @brief 
+ * @version 0.1
+ * @date 2022-02-14
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <assert.h>
+#include <SDL2/SDL.h>
+
+#include "entity.h"
+
+/**
+ * @brief the entity structure definition. 
+ */
+struct s_entity {
+    _ENTITY_COMMON_FIELDS_
+};
+
+/**
+ * @brief The entity "constructor".
+ *        Performs memory allocation, and
+ *        components initialization.
+ * 
+ * @param locX entity x coordinate.
+ * @param locY entity y coordinate.
+ * @param radius entity radius.
+ * @param heading entity angular heading in radians.
+ * @param velocX entity x velocity component.
+ * @param velocY entity y velocity component.
+ * @param rotation entity rotation step in radians.
+ * @param color	entity RGBA color.
+ * @return t_entity* pointer to the newly created entity.
+ */
+t_entity*EntityNew( double locX, double locY,double radius, double heading, double velocX, double velocY, double rotation,SDL_Color color){
+	/**
+	 * @todo EntityNew()
+	 */
+
+	t_entity*pEntity = (t_entity*)malloc(sizeof(t_entity));
+	assert(pEntity);
+
+	*pEntity =(t_entity){
+		.m_locX		= locX,
+		.m_locY		= locY,
+		.m_radius   = radius,
+		.m_velocX  	= velocX,
+		.m_velocY   = velocY,
+		.m_heading  = heading,
+		.m_rotation	= rotation,
+		.m_color    = color,
+	};
+
+
+
+    return pEntity;
+}
+
+/**
+ * @brief The entity "destructor".
+ *        Performs memory de-allocation, and
+ *        freeing all resources.
+ * 
+ * @param pEntity pointer to the entity to destroy.
+ * @return t_entity* NULL.
+ */
+t_entity*EntityDel(t_entity*pEntity){
+    assert(pEntity);
+	/**
+	 * @todo EntityDel()
+	 */
+    free(pEntity);
+
+    return NULL;
+}
+
+/**
+ * @brief Drawing the entity.
+ * 
+ * @param pEntity pointer to the entity to draw.
+ * @param pRenderer pointer to the renderer to draw in.
+ * @return t_entity* NULL.
+ */
+t_entity*EnityDraw(const t_entity*pEntity, SDL_Renderer*pRenderer){
+	assert(pEntity);
+	assert(pRenderer);
+	/**
+	 * @todo EntityDraw()
+	 */
+    return NULL;
+}
+
+
+/**
+ * @brief Moving the entity into the space area.
+ * 
+ * @param pEntity pointer to the entity to move.
+ * @param pSpaceArea pointer to the space area properties.
+ * @return int 0 in case of no over-crossing,
+ *             non null, otherwise.
+ */
+t_collision EntityMove(t_entity*pEntity, const SDL_Rect*pSpaceArea){
+    assert(pEntity);
+    assert(pSpaceArea);
+	/**
+	 * @todo EntityMove()
+	 */
+
+
+    pEntity->m_velocX = (pEntity->m_velocX*cos(pEntity->m_heading))/30;
+	pEntity->m_velocY = -(pEntity->m_velocX*cos(pEntity->m_heading))/30;
+    pEntity->m_locX += pEntity->m_velocX;
+    pEntity->m_locY += pEntity->m_velocY;
+
+    if(pEntity->m_locX < pSpaceArea->x){
+    	pEntity->m_locX = pSpaceArea->w;
+    }
+
+    if(pEntity->m_locX > pSpaceArea->w){
+    	pEntity->m_locX = pSpaceArea->x;
+    }
+
+    if(pEntity->m_locY < pSpaceArea->y){
+    	pEntity->m_locY = pSpaceArea->h;
+    }
+    if(pEntity->m_locY > pSpaceArea->h){
+    	pEntity->m_locY = pSpaceArea->y;
+    }
+
+    return COLLISON_NONE;
+}
+
+/**
+ * @brief Performs a collision check between two entities. 
+ * 
+ * @param pEntityA pointer to the first entity involved in collision ckecking.
+ * @param pEntityB pointer to the second entity involved in collision ckecking.
+ * @return t_collision null value in case of no collision detected,
+ *                     non null otherwise.
+ */
+t_collision EntityHasCollision(const t_entity*pEntityA, const t_entity*pEntityB){
+    assert(pEntityA);
+    assert(pEntityB);
+
+	/**
+	 * @todo EntityHasCollision()
+	 */
+    return COLLISON_NONE;
+}
+
+/**
+ * @brief Returns the entity x location coordinate.
+ * 
+ * @param pEntity pointer to the entity.
+ * @return double x location coordinate.
+ */
+double EntityGetLocX(const t_entity*pEntity){
+	assert(pEntity);
+	/**
+	 * @todo EntityGetLocX()
+	 */
+    return 0;
+}
+
+/**
+ * @brief Returns the entity y location coordinate.
+ * 
+ * @param pEntity pointer to the entity.
+ * @return double y location coordinate.
+ */
+double EntityGetLocY(const t_entity*pEntity){
+	assert(pEntity);
+	/**
+	 * @todo EntityGetLocY()
+	 */
+    return 0;
+}
+
+/**
+ * @brief Returns the entity radius.
+ * 
+ * @param pEntity pointer to the entity.
+ * @return double radius.
+ */
+double EntityGetRadius(const t_entity*pEntity){
+	assert(pEntity);
+	/**
+	 * @todo EntityGetRadius()
+	 */
+    return 0;
+}
+
+/**
+ * @brief Returns the entity RGBA color.
+ * 
+ * @param pEntity pointer to the entity.
+ * @return SDL_Color RGBA color.
+ */
+SDL_Color EntityGetColor(const t_entity*pEntity){
+	assert(pEntity);
+	/**
+	 * @todo EntityGetColor()
+	 */
+    return (SDL_Color){0};
+}
+
+/**
+ * @brief Determines the distance from entity to the designed point.
+ * 
+ * @param pEntity pointer to the entity.
+ * @param pPoint pointer to the point.
+ * @return double distance value.
+ */
+double EntityDistanceToPoint(const t_entity*pEntity, const SDL_Point*pPoint){
+	assert(pEntity);
+	assert(pPoint);
+	/**
+	 * @todo EntityDistanceToPoint()
+	 */
+    return 0;
+}

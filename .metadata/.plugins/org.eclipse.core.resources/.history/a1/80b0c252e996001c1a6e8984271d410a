@@ -1,0 +1,373 @@
+/**
+ * @file scene.c
+ * @author your name (you@domain.com)
+ * @brief 
+ * @version 0.1
+ * @date 2022-02-14
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
+
+#include <defines.h>
+#include "scene.h"
+#include "sceneDefines.h"
+
+#include <entity.h>
+#include <laser.h>
+#include <ship.h>
+#include <asteroid.h>
+#include <explosion.h>
+#include <container.h>
+
+/**
+ * @brief Takes care of laser hits on asteroids.
+ * 
+ * @param pScene pointer to the scene.
+ * @param pAsteroid pointer to the asteroid entity who was hit.
+ * @return void* NULL.
+ */
+void*_SceneLaserHitsCallback(t_scene*pScene, t_asteroid*pAsteroid);
+
+/**
+ * @brief For creating an asteroid belt around the engages ship.
+ * 
+ * @param pScene pointer to the scene who maintains the engaged ship.
+ * @param szNbAsteroids number of asteroids to create.
+ */
+void _SceneCreateAsteroidBelt(t_scene*pScene, size_t szNbAsteroids);
+
+/**
+ * @brief the scene structure definition. 
+ */
+struct s_scene{
+    SDL_Rect         m_spaceArea;           /* the sapce area limits definition */
+    SDL_Renderer    *m_pRenderer;           /* the main renderer for graphical drawings */
+    TTF_Font        *m_pFont;               /* pointer to the main font */
+    SDL_Color        m_colorBkgnd;          /* the scene background color*/
+    SDL_Color        m_colorScore;          /* the score text color */
+
+    /*-----------------------------------------------------------------------------------*/
+    t_ship          *m_pEngagedShip;        /* pointer to the engaged ship, AKA the last
+                                             * ship in the ships container */
+    t_container     *m_pShips;              /* the ships container */
+    t_container     *m_pLasers;             /* the lasers container */
+    t_container     *m_pAsteroids;          /* the asteroids container */
+    t_container     *m_pExplosions;         /* the explosions container */
+    double           m_levelTextTimeout;    /* timeout counter for displaying game level text */
+    size_t           m_level;               /* the current game level (0, 1, 2, ... ) */
+    size_t           m_score;               /* the current player score */
+    size_t           m_highScore;           /* the current game high score */
+};
+
+/**
+ * @brief The scene "constructor".
+ *        Performs memory allocation, and
+ *        components initialization.
+ * 
+ * @param iWidth horizontal size of the scene.
+ * @param iHeight vertical size of the scene.
+ * @param pRenderer pointer to the window renderer for graphical drawings.
+ * @param pFont pointer to the character font.
+ * @return t_scene* pointer to the newly created scene.
+ */
+t_scene*SceneNew(int iWidth, int iHeight, SDL_Renderer*pRenderer, TTF_Font*pFont){
+    t_scene*pScene=(t_scene*)malloc(sizeof(t_scene));
+    assert(pScene);
+    *pScene=(t_scene){
+        .m_spaceArea    = (SDL_Rect){
+                              .x = 0,
+                              .y = 0,
+                              .w = iWidth,
+                              .h = iHeight  
+                            },
+        .m_pRenderer    = pRenderer,
+        .m_pFont        = pFont,
+        .m_colorBkgnd   = SCENE_COLOR_BKGND,
+        .m_colorScore   = SCENE_COLOR_SCORE,
+        .m_pShips       = ContainerNew((t_ptfV)ShipDel),
+        .m_pLasers      = ContainerNew((t_ptfV)LaserDel),
+        // .m_pAsteroids   = ContainerNew((t_ptfV)AsteroidDel),
+        // .m_pExplosions  = ContainerNew((t_ptfV)ExplosionDel),
+    };
+
+    /**
+     * @todo Create the initial ships.
+     */
+   for(int k=0;k<SCENE_SHIP_INITIAL_COUNT;k++){
+        /**
+         */
+	   ContainerPushback(pScene->m_pShips, ShipNew(SCENE_SHIP_SIZE/2 + SCENE_SHIP_SIZE*k*0.6,
+	  		   	   	   	   	   	   	   	   	   	   SCENE_SHIP_SIZE/2,
+	  											   SCENE_SHIP_SIZE/2,
+	  											   45,
+	  											   SCENE_SHIP_LIVES_COLOR,
+	  											   SCENE_SHIP_THRUST_COLOR));
+    }
+    /**
+     * @todo Engage the last ship of ships container.
+     */
+
+   ShipEngage(ContainerGetback(pScene->m_pShips), pScene->m_spaceArea.w/2-SCENE_SHIP_SIZE/2,
+												   pScene->m_spaceArea.h/2-SCENE_SHIP_SIZE/2,
+												   SCENE_SHIP_SIZE,
+												   0,
+												   SCENE_SHIP_ENGAGED_COLOR);
+
+    /**
+     * @brief Construct an asteroidbelt.
+     */
+    _SceneCreateAsteroidBelt(pScene, SCENE_ASTEROID_NB_INITIAL);
+
+    /**
+     * @brief Initiate the level text display time.
+     */
+    pScene->m_levelTextTimeout=SCENE_LEVEL_SHOW_TIMEOUT*DEF_FPS;
+
+    return pScene;
+}
+
+/**
+ * @brief The scene "destructor".
+ *        Performs memory de-allocation, and
+ *        freeing all resources.
+ * 
+ * @param pScene pointer to the scene to destroy. 
+ * @return t_scene* NULL;
+ */
+t_scene*SceneDel(t_scene*pScene){
+    assert(pScene);
+     ContainerDel(pScene->m_pShips);
+     ContainerDel(pScene->m_pLasers);
+    // ContainerDel(pScene->m_pAsteroids);
+    // ContainerDel(pScene->m_pExplosions);
+    free(pScene);
+    return NULL;
+}
+
+/**
+ * @brief Performs all drawings, scene and all contained graphical objects.
+ * 
+ * @param pScene pointer to the scene to draw.
+ * @return t_scene* pointer to the scene himself.
+ */
+t_scene*SceneDraw(t_scene*pScene){
+    assert(pScene);
+
+    SDL_SetRenderDrawColor(
+        pScene->m_pRenderer, 
+        pScene->m_colorBkgnd.r,
+        pScene->m_colorBkgnd.g,
+        pScene->m_colorBkgnd.b,
+        pScene->m_colorBkgnd.a);
+    SDL_RenderClear(pScene->m_pRenderer);
+
+
+     ContainerParse(pScene->m_pShips, (t_ptfVV)ShipDraw, pScene->m_pRenderer);
+     ContainerParse(pScene->m_pLasers, (t_ptfVV)LaserDraw, pScene->m_pRenderer);
+    // ContainerParse(pScene->m_pAsteroids, (t_ptfVV)AsteroidDraw, pScene->m_pRenderer);
+    // ContainerParseDelIf(pScene->m_pExplosions, (t_ptfVV)ExplosionDraw, pScene->m_pRenderer);
+
+    /* drawing the scores ------------------------------------------------------------------*/
+    char buf[64];
+    SDL_Surface*pSurf;
+    SDL_Texture*pText;
+    SDL_Rect r={.y=10,.h=20};
+
+    sprintf(buf, "%08u", pScene->m_highScore);
+    pSurf=TTF_RenderText_Blended(pScene->m_pFont, buf, pScene->m_colorScore);
+    TTF_SizeText(pScene->m_pFont, buf, &r.w, NULL);
+    r.x=(pScene->m_spaceArea.w-r.w)/2;
+    pText=SDL_CreateTextureFromSurface(pScene->m_pRenderer, pSurf);
+    SDL_RenderCopy(pScene->m_pRenderer, pText, NULL, &r);
+    SDL_FreeSurface(pSurf);
+    SDL_DestroyTexture(pText);
+
+    sprintf(buf, "%08u", pScene->m_score);
+    pSurf=TTF_RenderText_Blended(pScene->m_pFont, buf, pScene->m_colorScore);
+    TTF_SizeText(pScene->m_pFont, buf, &r.w, NULL);
+    r.x=pScene->m_spaceArea.w-r.w-20;
+    pText=SDL_CreateTextureFromSurface(pScene->m_pRenderer, pSurf);
+    SDL_RenderCopy(pScene->m_pRenderer, pText, NULL, &r);
+    SDL_FreeSurface(pSurf);
+    SDL_DestroyTexture(pText);
+
+    if(pScene->m_levelTextTimeout>0){
+        sprintf(buf, "LEVEL %d", pScene->m_level);
+        SDL_Color color=pScene->m_colorScore;
+        color.a*=pScene->m_levelTextTimeout/(SCENE_LEVEL_SHOW_TIMEOUT*DEF_FPS);
+        pScene->m_levelTextTimeout--;
+        pSurf=TTF_RenderText_Blended(pScene->m_pFont, buf, color);
+        TTF_SizeText(pScene->m_pFont, buf, &r.w, NULL);
+        r.h=60;
+        r.x=(pScene->m_spaceArea.w-r.w)/2;
+        r.y=(pScene->m_spaceArea.h-r.h)/2+SCENE_SHIP_SIZE*1.5;
+        pText=SDL_CreateTextureFromSurface(pScene->m_pRenderer, pSurf);
+        SDL_RenderCopy(pScene->m_pRenderer, pText, NULL, &r);
+        SDL_FreeSurface(pSurf);
+        SDL_DestroyTexture(pText);
+    }
+
+    SDL_RenderPresent(pScene->m_pRenderer);
+    return pScene;
+}
+
+/**
+ * @brief Performs all animations, scene and all contained graphical objects.
+ * 
+ * @param pScene pointer to the scene to animate.
+ * @return t_scene* pointer to the scene himself.
+ */
+t_scene*SceneAnimate(t_scene*pScene){
+    assert(pScene);
+     ContainerParse(pScene->m_pShips, (t_ptfVV)ShipMove, &pScene->m_spaceArea);
+     ContainerParseDelIf(pScene->m_pLasers, (t_ptfVV)LaserMove, &pScene->m_spaceArea);
+    // ContainerParse(pScene->m_pAsteroids, (t_ptfVV)AsteroidMove, &pScene->m_spaceArea);
+
+
+
+
+    // ContainerIntersectDelIf(
+    // 		pScene->m_pLasers,
+	// 		pScene->m_pAsteroids,
+	// 		(t_ptfVV)EntityHasCollision,
+	// 		(t_ptfVV)_SceneLaserHitsCallback,
+	// 		pScene);
+
+    return pScene;
+}
+
+/**
+ * @brief Takes care of key down events from app.
+ * 
+ * @param pScene pointer to the scene responsible of key down events.
+ * @param pEvent pointer to the keyboad event.
+ * @return t_scene* pointer the actual scene object.
+ */
+t_scene*SceneKeydown(t_scene*pScene, SDL_KeyboardEvent*pEvent){
+    assert(pScene);
+    assert(pEvent);
+    printf("SCENE KEY DOWN\n");
+    switch (pEvent->keysym.sym){
+    case SDLK_RIGHT:
+         ShipTurning(ContainerGetback(pScene->m_pShips), TURN_RIGHT);
+        break;
+    case SDLK_LEFT:
+         ShipTurning(ContainerGetback(pScene->m_pShips), TURN_LEFT);
+        break;
+    case SDLK_UP:
+         ShipThrusting(ContainerGetback(pScene->m_pShips), 1);
+        break;
+    case SDLK_SPACE:
+        break;
+    default:
+        break;
+    }
+    return pScene;
+}
+
+/**
+ * @brief Takes care of key up events from app.
+ * 
+ * @param pScene pointer to the scene responsible of key up events.
+ * @param pEvent pointer to the keyboad event.
+ * @return t_scene* pointer the actual scene object.
+ */
+t_scene*SceneKeyup(t_scene*pScene, SDL_KeyboardEvent*pEvent){
+    assert(pScene);
+    assert(pEvent);
+    printf("SCENE KEY UP\n");
+    switch (pEvent->keysym.sym){
+    case SDLK_RIGHT:
+    	 ShipTurning(ContainerGetback(pScene->m_pShips), TURN_NONE);
+		break;
+    case SDLK_LEFT:
+        ShipTurning(ContainerGetback(pScene->m_pShips), TURN_NONE);
+        break;
+    case SDLK_UP:
+         ShipThrusting(ContainerGetback(pScene->m_pShips), 0);
+        break;
+    case SDLK_SPACE:
+//         ContainerPushback(pScene->m_pLasers, ContainerGetback(pScene->m_pShips));
+        break;
+    default:
+        break;
+    }
+    return pScene;
+}
+
+
+/**
+ * @brief Takes care of laser hits on asteroids.
+ * 
+ * @param pScene pointer to the scene.
+ * @param pAsteroid pointer to the asteroid entity who was hit.
+ * @return void* NULL.
+ */
+void*_SceneLaserHitsCallback(t_scene*pScene, t_asteroid*pAsteroid){
+
+    /**
+     * @todo Pushing back in explosions container a new explosion entity
+     *       located at asteroid location.
+     * 
+     */
+
+
+    /**
+     * @todo Processing the game score update according to the asteroid radius.
+     * 
+     */
+
+
+    /**
+     * @todo Processing asteroid fission by generating or not two smaller asteroids
+     *       if the asteroid radius allows it.
+     * 
+     */
+
+
+	return NULL;
+}
+
+/**
+ * @brief For creating an asteroid belt around the engages ship.
+ * 
+ * @param pScene pointer to the scene who maintains the engaged ship.
+ * @param szNbAsteroids number of asteroids to create.
+ */
+void _SceneCreateAsteroidBelt(t_scene*pScene, size_t szNbAsteroids){
+
+    /**
+     * @brief To prevent NULL assertion until the application is not
+     *        completly coded.
+     *        Must be removed once the application is written.
+     */
+    if(pScene->m_pEngagedShip==NULL) return;
+
+    for(size_t k=0;k<szNbAsteroids;k++){
+        SDL_Point ptAt;
+        do{
+            ptAt.x=rand()%pScene->m_spaceArea.w;
+            ptAt.y=rand()%pScene->m_spaceArea.h;
+        }while(EntityDistanceToPoint((t_entity*)pScene->m_pEngagedShip, &ptAt)<SCENE_SHIP_SIZE*SCENE_ASTEROID_CLEARING_ZONE_RATIO);
+		ContainerPushback(
+			pScene->m_pAsteroids,
+        	AsteroidNew(
+                ptAt.x,
+                ptAt.y,
+				(rand()%(SCENE_ASTEROID_SIZE_MAX-SCENE_ASTEROID_SIZE_MIN+1)+SCENE_ASTEROID_SIZE_MIN)/2,
+				(SDL_Color){
+					rand()%(SCENE_ASTEROID_RGB_MAX-SCENE_ASTEROID_RGB_MIN+1)+SCENE_ASTEROID_RGB_MIN,
+					rand()%(SCENE_ASTEROID_RGB_MAX-SCENE_ASTEROID_RGB_MIN+1)+SCENE_ASTEROID_RGB_MIN,
+					rand()%(SCENE_ASTEROID_RGB_MAX-SCENE_ASTEROID_RGB_MIN+1)+SCENE_ASTEROID_RGB_MIN,
+					255
+				})
+			);
+    }
+}

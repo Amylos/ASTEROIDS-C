@@ -1,0 +1,229 @@
+/**
+ * @file ship.c
+ * @author your name (you@domain.com)
+ * @brief 
+ * @version 0.1
+ * @date 2022-02-14
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <assert.h>
+#include <SDL2/SDL.h>
+
+#include <defines.h>
+#include "entityDefines.h"
+#include "entity.h"
+#include "laser.h"
+#include "ship.h"
+
+#define mBitsSet(f,m)       ((f)|=(m))
+#define mBitsClr(f,m)       ((f)&=(~(m)))
+#define mBitsTgl(f,m)       ((f)^=(m))
+#define mBitsMsk(f,m)       ((f)& (m))
+#define mIsBitsSet(f,m)     (((f)&(m))==(m))
+#define mIsBitsClr(f,m)     (((~(f))&(m))==(m))
+
+/**
+ * @brief ship status masks type definition.
+ */
+typedef enum s_statusMasks{
+	ST_ALL_CLEARED			= 0x00000000,
+	ST_CAN_SHOOT			= 0x00000001,	/* says if the ship can shoot or not 		*/
+	ST_SHOOTING				= 0x00000002,	/* says if ship is shooting or not 			*/
+	ST_THRUSTING			= 0x00000004,	/* says if ship is thrusting or not 		*/
+	ST_TURNING_LEFT			= 0x00000008,	/* says if ship is turning left 			*/
+	ST_TURNING_RIGHT		= 0x00000010,	/* says if ship is turning right 			*/
+	ST_BLINKING				= 0x00000020,	/* says if ship is blinking or not 			*/
+	ST_BLINKING_STATE_OFF	= 0x00000040,	/* says if ship is in blinking state off	*/
+	ST_SHOW_CENTER			= 0x00000080,	/* says if ship center is shown or not		*/
+}t_status;
+
+/**
+ * @brief the ship structure definition. 
+ */
+struct s_ship {
+    _ENTITY_COMMON_FIELDS_
+    /*--------------------------------*/
+    t_status    m_uStatus;
+	SDL_Color	m_colorThrust;
+};
+
+/**
+ * @brief The ship "constructor".
+ *        Performs memory allocation, and
+ *        components initialization.
+ * 
+ * @param locX x coordinate of ship location. 
+ * @param locY y coordinate of ship location. 
+ * @param radius ship radius size.
+ * @param heading ship angular heading in radians.
+ * @param colorShip ship RGBA color.
+ * @param colorThrust ship thrust RGBA color.
+ * @return t_ship* pointer to the newly created ship.
+ */
+t_ship*ShipNew(double locX, double locY, double radius, double heading, SDL_Color colorShip, SDL_Color colorThrust){
+	/**
+	 * @todo ShipNew()
+	 */
+	t_ship*pShip = (t_ship*)malloc(sizeof(t_ship));
+
+	pShip->m_locX 	 	 = locX;
+	pShip->m_locY		 = locY;
+	pShip->m_radius		 = radius;
+	pShip->m_heading 	 = heading;
+	pShip->m_color	 	 = colorShip;
+	pShip->m_colorThrust = colorThrust;
+
+	pShip = (t_ship*)realloc(pShip,sizeof(t_ship));
+
+	pShip->m_colorThrust = colorThrust;
+	pShip->m_uStatus = 0;
+	pShip->m_pVertices =(SDL_Point*)malloc(sizeof(SDL_Point)*5);
+	pShip->m_szVertices = 5;
+
+
+
+	return pShip;
+}
+
+/**
+ * @brief The ship "destructor".
+ *        Performs memory de-allocation, and
+ *        freeing all resources.
+ * 
+ * @param pShip pointer to the ship to destroy. 
+ * @return t_ship* NULL.
+ */
+t_ship*ShipDel(t_ship*pShip){
+	assert(pShip);
+	/**
+	 * @todo ShipDel()
+	 */
+	return NULL;
+}
+
+/**
+ * @brief Performs the graphical drawing of the ship.
+ * 
+ * @param pShip pointer to the ship to draw.
+ * @param pRenderer pointer to the renderer in which to draw.
+ * @return t_ship* NULL. 
+ */
+const t_ship*ShipDraw(const t_ship*pShip, SDL_Renderer*pRenderer){
+	assert(pShip);
+	/**
+	 * @todo ShipDraw()
+	 */
+
+	pShip->m_pVertices[0].x = 400;
+	pShip->m_pVertices[0].y = 400;
+
+	pShip->m_pVertices[1].x = 300;
+	pShip->m_pVertices[1].y = 300;
+
+	pShip->m_pVertices[2].x = 350;
+	pShip->m_pVertices[2].y = 350;
+
+	pShip->m_pVertices[3].x = 300;
+	pShip->m_pVertices[3].y = 300;
+
+	pShip->m_pVertices[4].x = 450;
+	pShip->m_pVertices[4].y = 450;
+
+	pShip->m_pVertices[5].x = 500;
+	pShip->m_pVertices[5].y = 400;
+
+	pShip->m_pVertices[6].x = 500;
+	pShip->m_pVertices[6].y = 400;
+
+	pShip->m_pVertices[7].x = 500;
+	pShip->m_pVertices[7].y = 400;
+
+	SDL_SetRenderDrawColor(pRenderer, pShip->m_color.r, pShip->m_color.g, pShip->m_color.b, pShip->m_color.a);
+	SDL_RenderDrawLines(pRenderer, pShip->m_pVertices, pShip->m_szVertices);
+	return NULL;
+}
+
+/**
+ * @brief Performs the moving of the ship.
+ *        Takes care of space area limits over-crossing.
+ * 
+ * @param pShip pointer to the ship to move.
+ * @param pSpaceArea pointer to the space area properties.
+ * @return t_ship* pointer to the actual ship. 
+ */
+t_ship*ShipMove(t_ship*pShip, const SDL_Rect*pSpaceArea){
+	assert(pShip);
+	/**
+	 * @todo ShipMove()
+	 */
+	return NULL;
+}
+
+/**
+ * @brief Enabling/Disabling the ship thrusting.
+ * 
+ * @param pShip pointer to the ship to thrust enabling.
+ * @param enable the enabling state
+ * @return t_ship* pointer to the actual ship.
+ */
+t_ship*ShipThrusting(t_ship*pShip, int enable){
+	assert(pShip);
+	/**
+	 * @todo ShipThrusting()
+	 */
+	return NULL;
+}
+
+/**
+ * @brief Setting the ship turning.
+ * 
+ * @param pShip pointer to the ship to set turning.
+ * @param turning turning mode.
+ * @return t_ship* pointer to the actual ship.
+ */
+t_ship*ShipTurning(t_ship*pShip, t_turning turning){
+	assert(pShip);
+	/**
+	 * @todo ShipTurning()
+	 */
+	return NULL;
+}
+
+/**
+ * @brief Performs ship engagment.
+ * 
+ * @param pShip pointer to the ship to engage.
+ * @param locX x coordinate where to engage.
+ * @param locY y coordinate where to engage.
+ * @param radius new ship radius size. 
+ * @param heading new ship heading.
+ * @param color engaged ship color.
+ * @return t_ship* pointer to the current engaged ship.
+ */
+t_ship*ShipEngage(t_ship*pShip, double locX, double locY, double radius, double heading, SDL_Color color){
+	assert(pShip);
+	/**
+	 * @todo ShipEngage()
+	 */
+	return NULL;
+}
+
+/**
+ * @brief Performs a laser shoot.
+ * 
+ * @param pShip pointer to the ship who makes a laser shoot.
+ * @return t_laser* pointer to the newly created laser.
+ */
+t_laser*ShipLaserShoot(const t_ship*pShip){
+	assert(pShip);
+	/**
+	 * @todo ShipLaserShoot()
+	 */
+	return NULL;
+}

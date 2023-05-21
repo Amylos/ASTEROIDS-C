@@ -1,0 +1,164 @@
+/**
+ * @file laser.c
+ * @author your name (you@domain.com)
+ * @brief 
+ * @version 0.1
+ * @date 2022-02-15
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <assert.h>
+#include <SDL2/SDL.h>
+
+#include <defines.h>
+#include "entityDefines.h"
+#include "entity.h"
+#include "laser.h"
+
+/**
+ * @brief the ship structure definition.
+ */
+struct s_laser{
+    _ENTITY_COMMON_FIELDS_
+    /*----------------------------------*/
+	int		m_dist;
+};
+
+/**
+ * @brief The laser "constructor".
+ *        Performs memory allocation, and
+ *        components initialization.
+ * 
+ * @param locX x coordinate of laser location. 
+ * @param locY y coordinate of laser location. 
+ * @param radius laser radius size.
+ * @param heading laser angular heading in radians.
+ * @param velocX laser x velocity component.
+ * @param velocY laser y velocity component.
+ * @param color laser RGBA color.
+ * @return t_laser* pointer to the newly created laser.
+ */
+t_laser*LaserNew(
+        double locX, double locY, double radius, 
+        double heading, double velocX, double velocY, SDL_Color color){
+    /**
+     * @todo LaserNew()
+     */
+
+	t_laser*pLaser = (t_laser*)malloc(sizeof(t_laser));
+	assert(pLaser);
+
+	pLaser->m_locX	  = locX;
+	pLaser->m_locY 	  = locY;
+	pLaser->m_radius  = radius;
+	pLaser->m_heading = heading;
+	pLaser->m_velocX  = velocX/30;
+	pLaser->m_velocY  = velocY/30;
+	pLaser->m_color   = color;
+
+//	pLaser = (t_laser*)realloc(pLaser,sizeof(SDL_Point)*5);
+	pLaser->m_pVertices =(SDL_Point*)malloc(sizeof(SDL_Point)*5);
+	pLaser->m_szVertices =5;
+
+
+	pLaser->m_velocX += (pLaser->m_velocX*cos(pLaser->m_heading));
+	pLaser->m_velocY += (pLaser->m_velocX*cos(pLaser->m_heading));
+
+    return pLaser;
+}
+
+/**
+ * @brief The laser "destructor".
+ *        Performs memory de-allocation, and
+ *        freeing all resources.
+ * 
+ * @param pLaser pointer to the laser to destroy. 
+ * @return t_laser* NULL.
+ */
+t_laser*LaserDel(t_laser*pLaser){
+    assert(pLaser);
+    /**
+     * @todo LaserDel()
+     */
+
+    free(pLaser);
+
+    return NULL;
+}
+
+/**
+ * @brief Performs the graphical drawing of the laser.
+ * 
+ * @param pLaser pointer to the laser to draw.
+ * @param pRenderer pointer to the renderer in which to draw.
+ * @return t_laser* NULL. 
+ */
+const t_laser*LaserDraw(const t_laser*pLaser, SDL_Renderer*pRenderer){
+    assert(pLaser);
+    /**
+     * @todo LaserDraw()
+     */
+    printf("Laser Head : %f\n",pLaser->m_heading);
+    SDL_SetRenderDrawColor(pRenderer, pLaser->m_color.r,
+										pLaser->m_color.g,
+										pLaser->m_color.b,
+										pLaser->m_color.a);
+
+    SDL_RenderDrawLines(pRenderer, pLaser->m_pVertices, pLaser->m_szVertices);
+    SDL_RenderDrawPoints(pRenderer, pLaser->m_pVertices, pLaser->m_szVertices);
+
+    return NULL;
+}
+
+/**
+ * @brief Performs the moving of the laser.
+ *        Takes care of space area limits over-crossing.
+ * 
+ * @param pLaser pointer to the laser to move.
+ * @param pSpaceArea pointer to the space area properties.
+ * @return t_laser*  depends on condition. 
+ */
+t_laser*LaserMove(t_laser*pLaser, const SDL_Rect*pSpaceArea){
+    assert(pLaser);
+    /**
+     * @todo LaserMove()
+     */
+
+//    pLaser->m_pVertices[0].x = pLaser->m_locX + pLaser->m_radius*(cos((45*M_PI)/180)*cos(pLaser->m_heading)+sin((45*M_PI)/180)*sin(pLaser->m_heading));
+//	pLaser->m_pVertices[0].y = pLaser->m_locY + pLaser->m_radius*(-cos((45*M_PI)/180)*sin(pLaser->m_heading)+sin((45*M_PI)/180)*cos(pLaser->m_heading));
+//
+//	pLaser->m_pVertices[1].x = pLaser->m_locX + pLaser->m_radius*(cos((135*M_PI)/180)*cos(pLaser->m_heading)+sin((135*M_PI)/180)*sin(pLaser->m_heading));
+//	pLaser->m_pVertices[1].y = pLaser->m_locY + pLaser->m_radius*(-cos((135*M_PI)/180)*sin(pLaser->m_heading)+sin((135*M_PI)/180)*cos(pLaser->m_heading));
+//
+//	pLaser->m_pVertices[2].x = pLaser->m_locX + pLaser->m_radius*(cos((225*M_PI)/180)*cos(pLaser->m_heading)+sin((225*M_PI)/180)*sin(pLaser->m_heading));
+//	pLaser->m_pVertices[2].y = pLaser->m_locY + pLaser->m_radius*(-cos((225*M_PI)/180)*sin(pLaser->m_heading)+sin((225*M_PI)/180)*cos(pLaser->m_heading));
+//
+//	pLaser->m_pVertices[3].x = pLaser->m_locX + pLaser->m_radius*(cos((315*M_PI)/180)*cos(pLaser->m_heading)+sin((315*M_PI)/180)*sin(pLaser->m_heading));
+//	pLaser->m_pVertices[3].y = pLaser->m_locY + pLaser->m_radius*(-cos((315*M_PI)/180)*sin(pLaser->m_heading)+sin((315*M_PI)/180)*cos(pLaser->m_heading));
+
+//
+    //    pLaser->m_locX += pLaser->m_velocX + (pLaser->m_velocX*cos((pLaser->m_heading))/30);
+    //	pLaser->m_locY += pLaser->m_velocY - (pLaser->m_velocX*sin((pLaser->m_heading))/30);
+
+    EntityMove((t_entity*)pLaser, pSpaceArea);
+
+
+
+    size_t k;
+    for(k = 0; k <4; k++){
+    	pLaser->m_pVertices[k].x = pLaser->m_locX + pLaser->m_radius*(cos(((90*k+45)*M_PI)/180)*cos(pLaser->m_heading)+sin(((90*k+45)*M_PI)/180)*sin(pLaser->m_heading));
+		pLaser->m_pVertices[k].y = pLaser->m_locY + pLaser->m_radius*(-cos(((90*k+45)*M_PI)/180)*sin(pLaser->m_heading)+sin(((90*k+45)*M_PI)/180)*cos(pLaser->m_heading));
+
+    }
+	pLaser->m_pVertices[4] = pLaser->m_pVertices[0];
+
+
+
+
+    return NULL;
+}
